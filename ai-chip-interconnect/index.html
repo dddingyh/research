@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 芯片互联全景拆解 · 从晶圆到光网络</title>
+<style>
+  :root{
+    --bg:#070b14; --bg2:#0c1424; --panel:#0f1a2e; --panel2:#13233f;
+    --line:#1d3151; --line2:#2a4a78; --ink:#e8f0ff; --mut:#8aa0c4;
+    --acc:#37e0c8; --acc2:#5b8cff; --warm:#ff9e57; --pink:#ff6f9c; --gold:#ffd166;
+    --green:#5ad17e; --purple:#b78cff;
+    --shadow:0 18px 50px rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:radial-gradient(1200px 700px at 80% -10%,#11203b 0%,transparent 60%),radial-gradient(900px 600px at -10% 20%,#10242b 0%,transparent 55%),var(--bg);
+    color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65;-webkit-font-smoothing:antialiased}
+  a{color:var(--acc2);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+
+  /* ---- Top nav ---- */
+  header.top{position:sticky;top:0;z-index:50;background:rgba(7,11,20,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .topbar{display:flex;align-items:center;gap:18px;height:60px}
+  .brand{font-weight:800;letter-spacing:.3px;font-size:16px;white-space:nowrap}
+  .brand .dot{color:var(--acc)}
+  nav.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+  nav.tabs a{color:var(--mut);font-size:13.5px;padding:7px 12px;border-radius:9px;font-weight:600;transition:.18s}
+  nav.tabs a:hover{color:var(--ink);background:var(--panel)}
+  nav.tabs a.on{color:#04121a;background:linear-gradient(120deg,var(--acc),#46c7ff)}
+
+  /* ---- Hero ---- */
+  .hero{padding:64px 0 30px;position:relative;overflow:hidden}
+  .kick{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:2.5px;color:var(--acc);
+    border:1px solid var(--line2);padding:5px 12px;border-radius:30px;background:var(--panel)}
+  .hero h1{font-size:clamp(30px,5vw,52px);line-height:1.08;margin:18px 0 14px;font-weight:850;letter-spacing:-.5px}
+  .hero h1 span{background:linear-gradient(110deg,var(--acc),var(--acc2) 55%,var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p.lead{font-size:18px;color:var(--mut);max-width:760px;margin:0 0 26px}
+  .scaleflow{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+  .schip{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:10px 14px;font-size:13px}
+  .schip b{font-size:13.5px}
+  .schip .ar{color:var(--mut);font-size:18px;margin:0 2px}
+  .schip small{color:var(--mut)}
+  .bw{color:var(--gold);font-variant-numeric:tabular-nums;font-weight:700}
+
+  /* ---- Section frame ---- */
+  section.lvl{padding:62px 0;border-top:1px solid var(--line)}
+  .secnum{font-size:13px;font-weight:800;letter-spacing:2px;color:var(--acc)}
+  .lvl h2{font-size:clamp(24px,3.4vw,34px);margin:8px 0 8px;font-weight:800;letter-spacing:-.3px}
+  .lvl .sub{color:var(--mut);max-width:820px;margin:0 0 26px;font-size:16px}
+
+  /* ---- Interactive diagram ---- */
+  .stage{display:grid;grid-template-columns:1.25fr .9fr;gap:22px;align-items:start}
+  @media(max-width:880px){.stage{grid-template-columns:1fr}}
+  .canvas{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);
+    border-radius:18px;padding:18px;box-shadow:var(--shadow);position:relative}
+  .canvas svg{width:100%;height:auto;display:block}
+  .hint{position:absolute;top:12px;right:16px;font-size:11.5px;color:var(--mut);letter-spacing:.3px}
+
+  .info{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px 20px 8px;min-height:300px}
+  .info .tag{font-size:11.5px;font-weight:700;letter-spacing:1.5px;color:var(--acc);text-transform:uppercase}
+  .info h3{margin:8px 0 6px;font-size:21px}
+  .info p{color:var(--mut);font-size:14.5px;margin:0 0 14px}
+  .info .spec{display:flex;justify-content:space-between;gap:12px;border-top:1px dashed var(--line2);padding:9px 0;font-size:13.5px}
+  .info .spec b{color:var(--ink);font-weight:600}
+  .info .spec span{color:var(--mut);text-align:right}
+  .info .pill{display:inline-block;font-size:11.5px;color:var(--ink);background:var(--panel2);border:1px solid var(--line2);
+    padding:3px 9px;border-radius:20px;margin:2px 4px 2px 0}
+
+  /* interactive svg parts */
+  .hot{cursor:pointer;transition:.15s}
+  .hot:hover{filter:brightness(1.25)}
+  .hot.sel{filter:brightness(1.35) drop-shadow(0 0 6px var(--acc))}
+  text{font-family:inherit;fill:var(--ink)}
+  .lab{font-size:11px;fill:#cfe0ff;font-weight:600}
+  .lab.s{font-size:9.5px;fill:var(--mut);font-weight:500}
+
+  /* ---- key facts row ---- */
+  .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:26px}
+  @media(max-width:760px){.facts{grid-template-columns:repeat(2,1fr)}}
+  .fact{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .fact .n{font-size:26px;font-weight:850;color:var(--acc);font-variant-numeric:tabular-nums}
+  .fact .l{font-size:12.5px;color:var(--mut);margin-top:2px}
+
+  /* ---- company tiers ---- */
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 22px}
+  .filters button{background:var(--panel);border:1px solid var(--line);color:var(--mut);font-weight:600;
+    font-size:13px;padding:8px 14px;border-radius:30px;cursor:pointer;transition:.15s}
+  .filters button:hover{color:var(--ink);border-color:var(--line2)}
+  .filters button.on{background:linear-gradient(120deg,var(--acc),#46c7ff);color:#04121a;border-color:transparent}
+  .tiers{display:flex;flex-direction:column;gap:14px}
+  .tier{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:.2s}
+  .tier.hide{display:none}
+  .tier .th{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer}
+  .tier .idx{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:15px;color:#04121a;flex:0 0 auto}
+  .tier .ttl{font-size:17px;font-weight:750}
+  .tier .desc{font-size:13px;color:var(--mut);margin-top:1px}
+  .tier .meta{margin-left:auto;display:flex;align-items:center;gap:14px}
+  .tier .moat{font-size:11.5px;padding:4px 10px;border-radius:20px;border:1px solid var(--line2);color:var(--mut)}
+  .tier .chev{color:var(--mut);transition:.2s;font-size:13px}
+  .tier.open .chev{transform:rotate(90deg)}
+  .tier .body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+  .tier.open .body{max-height:1400px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;padding:4px 20px 20px}
+  .co{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 13px;transition:.15s}
+  .co:hover{border-color:var(--acc);transform:translateY(-2px)}
+  .co .nm{font-weight:700;font-size:14px;display:flex;align-items:center;gap:7px}
+  .co .flag{font-size:11px;padding:1px 6px;border-radius:5px;background:var(--panel2);color:var(--mut);font-weight:600}
+  .co .rl{font-size:12px;color:var(--mut);margin-top:4px}
+  .co.lead-co{border-color:var(--gold)}
+  .co.lead-co .nm::after{content:"龙头";font-size:10px;color:var(--gold);border:1px solid var(--gold);border-radius:5px;padding:0 5px;font-weight:700}
+
+  /* ---- copper vs optics callout ---- */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
+  @media(max-width:700px){.compare{grid-template-columns:1fr}}
+  .cmp{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+  .cmp h4{margin:0 0 10px;font-size:16px;display:flex;align-items:center;gap:9px}
+  .cmp ul{margin:0;padding-left:18px;color:var(--mut);font-size:14px}
+  .cmp ul li{margin:6px 0}
+  .dotc{width:11px;height:11px;border-radius:50%;display:inline-block}
+
+  footer{border-top:1px solid var(--line);padding:34px 0 60px;color:var(--mut);font-size:13px}
+  footer a{color:var(--mut)}
+  .src{font-size:12px;color:#5d728f;margin-top:10px;line-height:1.9}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:12px;color:var(--mut)}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .swatch{width:13px;height:13px;border-radius:3px;display:inline-block}
+  .note{font-size:12.5px;color:#6f86a8;margin-top:18px;border-left:2px solid var(--line2);padding-left:12px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap topbar">
+    <div class="brand">AI 互联 <span class="dot">·</span> 全栈拆解</div>
+    <nav class="tabs">
+      <a href="#hero" class="on">总览</a>
+      <a href="#board">板卡 / 封装</a>
+      <a href="#rack">机柜内</a>
+      <a href="#fabric">机柜间</a>
+      <a href="#optic">光模块</a>
+      <a href="#firms">产业链公司</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="hero">
+  <div class="wrap">
+    <span class="kick">从晶圆 · 到光网络</span>
+    <h1>AI 芯片是怎么<span>连成一台超级计算机</span>的</h1>
+    <p class="lead">一颗 GPU 的算力是有限的，真正的 AI 算力来自把成千上万颗芯片"焊"成一个整体。互联体系按距离分四个尺度逐级放大——晶粒之间、卡内、机柜内、机柜间。每跨一级，带宽下降、距离上升、介质从硅变成铜、再变成光。下面是可交互的逐层拆解。</p>
+
+    <div class="scaleflow">
+      <div class="schip"><b>① 晶粒级</b><span class="ar">→</span><small>Die-to-Die / 2.5D 封装</small><br><span class="bw">10 TB/s</span></div>
+      <div class="schip"><b>② 板卡级</b><span class="ar">→</span><small>NVLink · 超节点内</small><br><span class="bw">1.8 TB/s</span></div>
+      <div class="schip"><b>③ 机柜级</b><span class="ar">→</span><small>NVLink Spine 铜背板</small><br><span class="bw">130 TB/s 全互联</span></div>
+      <div class="schip"><b>④ 集群级</b><span class="ar">→</span><small>光模块 + 交换机</small><br><span class="bw">800G→1.6T</span></div>
+    </div>
+
+    <div class="legend">
+      <span><i class="swatch" style="background:#5b8cff"></i>计算 / 逻辑</span>
+      <span><i class="swatch" style="background:#ffd166"></i>HBM 内存</span>
+      <span><i class="swatch" style="background:#37e0c8"></i>互联 / 交换</span>
+      <span><i class="swatch" style="background:#ff9e57"></i>光 / 激光</span>
+      <span><i class="swatch" style="background:#b78cff"></i>封装 / 基板</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 1. BOARD / PACKAGE ============ -->
+<section class="lvl" id="board">
+  <div class="wrap">
+    <div class="secnum">LEVEL 01 — 最里层</div>
+    <h2>板卡与封装结构：一颗"GPU"其实是一个微缩城市</h2>
+    <p class="sub">以 NVIDIA Blackwell B200 为例。我们口中的"一颗芯片"，是把 2 颗逻辑裸片 + 8 颗 HBM3e 内存堆栈，通过 TSMC <b>CoWoS-L</b> 2.5D 先进封装拼在同一块硅/有机中介层上，再焊到 SXM 模组、装上 HGX 基板。点击下图任意部件查看细节。</p>
+
+    <div class="stage">
+      <div class="canvas">
+        <span class="hint">点击部件 ▸</span>
+        <svg viewBox="0 0 560 360" id="svgBoard" role="img" aria-label="GPU 封装剖面图">
+          <!-- substrate -->
+          <rect class="hot" data-k="substrate" x="40" y="250" width="480" height="46" rx="6" fill="#3a2d5e" stroke="#b78cff" stroke-width="1.5"/>
+          <text class="lab" x="280" y="278" text-anchor="middle">封装基板 Substrate (有机/BGA 焊球阵列)</text>
+          <!-- balls -->
+          <g fill="#7d6bb0">
+            <circle cx="70" cy="302" r="5"/><circle cx="110" cy="302" r="5"/><circle cx="150" cy="302" r="5"/><circle cx="190" cy="302" r="5"/><circle cx="230" cy="302" r="5"/><circle cx="270" cy="302" r="5"/><circle cx="310" cy="302" r="5"/><circle cx="350" cy="302" r="5"/><circle cx="390" cy="302" r="5"/><circle cx="430" cy="302" r="5"/><circle cx="470" cy="302" r="5"/>
+          </g>
+          <!-- interposer -->
+          <rect class="hot" data-k="interposer" x="60" y="214" width="440" height="38" rx="4" fill="#2a3b66" stroke="#5b8cff" stroke-width="1.5"/>
+          <text class="lab s" x="280" y="238" text-anchor="middle">CoWoS-L 中介层 Interposer + LSI 硅桥（微凸点 micro-bump）</text>
+
+          <!-- HBM stacks left -->
+          <g class="hot" data-k="hbm">
+            <rect x="74" y="150" width="58" height="66" rx="4" fill="#caa53a" stroke="#ffd166" stroke-width="1.5"/>
+            <rect x="74" y="150" width="58" height="66" rx="4" fill="url(#hbmlines)"/>
+            <rect x="140" y="150" width="58" height="66" rx="4" fill="#caa53a" stroke="#ffd166" stroke-width="1.5"/>
+            <rect x="140" y="150" width="58" height="66" rx="4" fill="url(#hbmlines)"/>
+            <text class="lab s" x="136" y="142" text-anchor="middle" fill="#ffd166">HBM3e ×4</text>
+          </g>
+          <!-- HBM stacks right -->
+          <g class="hot" data-k="hbm">
+            <rect x="362" y="150" width="58" height="66" rx="4" fill="#caa53a" stroke="#ffd166" stroke-width="1.5"/>
+            <rect x="362" y="150" width="58" height="66" rx="4" fill="url(#hbmlines)"/>
+            <rect x="428" y="150" width="58" height="66" rx="4" fill="#caa53a" stroke="#ffd166" stroke-width="1.5"/>
+            <rect x="428" y="150" width="58" height="66" rx="4" fill="url(#hbmlines)"/>
+            <text class="lab s" x="424" y="142" text-anchor="middle" fill="#ffd166">HBM3e ×4</text>
+          </g>
+
+          <!-- two GPU dies -->
+          <g class="hot" data-k="die">
+            <rect x="210" y="150" width="64" height="66" rx="4" fill="#2f5bd0" stroke="#8fb4ff" stroke-width="1.5"/>
+            <rect x="286" y="150" width="64" height="66" rx="4" fill="#2f5bd0" stroke="#8fb4ff" stroke-width="1.5"/>
+            <text class="lab" x="242" y="188" text-anchor="middle">Die 0</text>
+            <text class="lab" x="318" y="188" text-anchor="middle">Die 1</text>
+            <!-- C2C link -->
+            <rect x="274" y="172" width="12" height="22" fill="#37e0c8"/>
+          </g>
+          <text class="lab s" x="280" y="132" text-anchor="middle" fill="#37e0c8">↑ NV-HBI 片间互联 10 TB/s（两 die 当一颗用）</text>
+
+          <!-- module label top -->
+          <rect x="40" y="40" width="480" height="70" rx="10" fill="none" stroke="#23406e" stroke-dasharray="5 4"/>
+          <text class="lab" x="56" y="62" fill="#8aa0c4">SXM 模组 / OAM 形态 — 含供电 VRM、NVLink 金手指</text>
+          <rect class="hot" data-k="module" x="56" y="74" width="120" height="26" rx="5" fill="#16263f" stroke="#37e0c8"/>
+          <text class="lab" x="116" y="91" text-anchor="middle">B200 封装</text>
+          <rect class="hot" data-k="board" x="190" y="74" width="150" height="26" rx="5" fill="#16263f" stroke="#37e0c8"/>
+          <text class="lab" x="265" y="91" text-anchor="middle">HGX 基板 ×8 GPU</text>
+          <rect class="hot" data-k="grace" x="354" y="74" width="150" height="26" rx="5" fill="#16263f" stroke="#37e0c8"/>
+          <text class="lab" x="429" y="91" text-anchor="middle">Grace CPU (C2C)</text>
+
+          <defs>
+            <pattern id="hbmlines" width="6" height="6" patternUnits="userSpaceOnUse">
+              <path d="M0 3 H6" stroke="#a8842a" stroke-width="1"/>
+            </pattern>
+          </defs>
+        </svg>
+      </div>
+
+      <div class="info" id="infoBoard">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <div class="facts">
+      <div class="fact"><div class="n">208B</div><div class="l">B200 晶体管数（双 die 合计）</div></div>
+      <div class="fact"><div class="n">192GB</div><div class="l">单卡 HBM3e 容量 · 8 堆栈</div></div>
+      <div class="fact"><div class="n">8 TB/s</div><div class="l">HBM 内存带宽</div></div>
+      <div class="fact"><div class="n">10 TB/s</div><div class="l">双 die 片间互联 (NV-HBI)</div></div>
+    </div>
+    <p class="note">关键点：HBM 与逻辑 die 之间靠 <b>2.5D 中介层</b>（CoWoS）上的上万根微凸点直连，距离不到 1mm —— 这是整个体系中带宽最高、距离最短的一级。封装良率与 CoWoS 产能，是目前 AI 芯片的核心瓶颈之一。</p>
+  </div>
+</section>
+
+<!-- ============ 2. INTRA-RACK ============ -->
+<section class="lvl" id="rack">
+  <div class="wrap">
+    <div class="secnum">LEVEL 02 — 一个机柜 = 一台 GPU</div>
+    <h2>机柜内结构：GB200 NVL72 把 72 颗 GPU 变成"单卡"</h2>
+    <p class="sub">机柜（Rack）内部是 NVIDIA 所谓的"超节点"。18 个<b>计算托盘</b> + 9 个<b>交换托盘</b>，靠机柜背面的 <b>NVLink Spine 铜背板</b>（5000+ 根同轴铜缆）实现 72 颗 GPU 全互联（all-to-all）。这一级仍用<b>铜</b>而非光——因为距离短（&lt;1m），铜更省电、更便宜、更可靠。点击托盘查看。</p>
+
+    <div class="stage">
+      <div class="canvas">
+        <span class="hint">点击托盘 ▸</span>
+        <svg viewBox="0 0 560 380" id="svgRack" role="img" aria-label="NVL72 机柜结构">
+          <!-- rack frame -->
+          <rect x="60" y="20" width="300" height="340" rx="10" fill="#0b1426" stroke="#27406b" stroke-width="2"/>
+          <text class="lab s" x="210" y="14" text-anchor="middle">NVL72 机柜 · ~120 kW · 液冷</text>
+
+          <!-- top compute trays -->
+          <g id="topTrays"></g>
+          <!-- switch trays middle -->
+          <g id="switchTrays"></g>
+          <!-- bottom compute trays -->
+          <g id="botTrays"></g>
+
+          <!-- spine on right -->
+          <rect class="hot" data-k="spine" x="372" y="20" width="46" height="340" rx="8" fill="#13362f" stroke="#37e0c8" stroke-width="2"/>
+          <text class="lab" x="395" y="200" text-anchor="middle" transform="rotate(90 395 200)" fill="#37e0c8">NVLink Spine 铜背板</text>
+
+          <!-- power / cdu -->
+          <rect class="hot" data-k="power" x="430" y="20" width="110" height="120" rx="8" fill="#2a1d2e" stroke="#ff6f9c"/>
+          <text class="lab" x="485" y="74" text-anchor="middle">供电 Busbar</text>
+          <text class="lab s" x="485" y="92" text-anchor="middle">+ PSU 整流架</text>
+          <rect class="hot" data-k="cool" x="430" y="150" width="110" height="120" rx="8" fill="#16263f" stroke="#5b8cff"/>
+          <text class="lab" x="485" y="204" text-anchor="middle">CDU 液冷</text>
+          <text class="lab s" x="485" y="222" text-anchor="middle">分液歧管</text>
+          <rect class="hot" data-k="cx" x="430" y="280" width="110" height="80" rx="8" fill="#16323a" stroke="#37e0c8"/>
+          <text class="lab" x="485" y="316" text-anchor="middle">ConnectX /</text>
+          <text class="lab s" x="485" y="332" text-anchor="middle">BlueField → 出柜</text>
+        </svg>
+      </div>
+
+      <div class="info" id="infoRack"></div>
+    </div>
+
+    <div class="compare">
+      <div class="cmp">
+        <h4><i class="dotc" style="background:#ff9e57"></i>Scale-Up（纵向扩展 · 本柜内）</h4>
+        <ul>
+          <li>协议：<b>NVLink 5 / NVSwitch</b>，每 GPU 1.8 TB/s</li>
+          <li>介质：<b>铜</b>（NVLink Spine 同轴电缆背板）</li>
+          <li>目标：让 72 颗 GPU <b>共享显存、当一颗用</b></li>
+          <li>特点：低延迟、内存语义、全互联无阻塞</li>
+        </ul>
+      </div>
+      <div class="cmp">
+        <h4><i class="dotc" style="background:#5b8cff"></i>Scale-Out（横向扩展 · 跨柜）</h4>
+        <ul>
+          <li>协议：<b>InfiniBand</b> 或 <b>以太网 (Spectrum-X)</b></li>
+          <li>介质：<b>光</b>（800G/1.6T 光模块）</li>
+          <li>目标：把成百上千个机柜连成<b>万卡集群</b></li>
+          <li>特点：可路由、规模大、延迟更高</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">一句话区分：<b>Scale-Up 用铜把几十颗卡焊成"一台大机器"，Scale-Out 用光把成千台机器连成"一个集群"</b>。铜与光的分界线，差不多就在机柜的边缘。</p>
+  </div>
+</section>
+
+<!-- ============ 3. INTER-RACK FABRIC ============ -->
+<section class="lvl" id="fabric">
+  <div class="wrap">
+    <div class="secnum">LEVEL 03 — 机柜之间</div>
+    <h2>机柜间连接：光纤织成的 Leaf-Spine 集群网络</h2>
+    <p class="sub">出了机柜，铜走不远了，全部换成<b>光模块 + 光纤</b>。万卡集群普遍采用<b>胖树 / Leaf-Spine</b> 多层无阻塞拓扑，并按 GPU 的网卡做 <b>Rail-Optimized（轨道优化）</b>布线。每根光纤两端各插一个光模块——这就是光模块需求随 GPU 数量爆炸式增长的原因。点击节点查看。</p>
+
+    <div class="stage">
+      <div class="canvas">
+        <span class="hint">点击节点 ▸</span>
+        <svg viewBox="0 0 560 340" id="svgFab" role="img" aria-label="Leaf-Spine 拓扑">
+          <!-- spine switches -->
+          <g class="hot" data-k="spine">
+            <rect x="120" y="26" width="90" height="34" rx="7" fill="#16323a" stroke="#37e0c8" stroke-width="1.5"/>
+            <rect x="350" y="26" width="90" height="34" rx="7" fill="#16323a" stroke="#37e0c8" stroke-width="1.5"/>
+            <text class="lab" x="165" y="48" text-anchor="middle">Spine SW</text>
+            <text class="lab" x="395" y="48" text-anchor="middle">Spine SW</text>
+          </g>
+          <!-- leaf switches -->
+          <g class="hot" data-k="leaf">
+            <rect x="40" y="140" width="86" height="32" rx="7" fill="#1b2c4d" stroke="#5b8cff" stroke-width="1.5"/>
+            <rect x="190" y="140" width="86" height="32" rx="7" fill="#1b2c4d" stroke="#5b8cff" stroke-width="1.5"/>
+            <rect x="340" y="140" width="86" height="32" rx="7" fill="#1b2c4d" stroke="#5b8cff" stroke-width="1.5"/>
+            <rect x="455" y="140" width="86" height="32" rx="7" fill="#1b2c4d" stroke="#5b8cff" stroke-width="1.5"/>
+            <text class="lab" x="83" y="160" text-anchor="middle">Leaf/ToR</text>
+            <text class="lab" x="233" y="160" text-anchor="middle">Leaf/ToR</text>
+            <text class="lab" x="383" y="160" text-anchor="middle">Leaf/ToR</text>
+            <text class="lab" x="498" y="160" text-anchor="middle">Leaf/ToR</text>
+          </g>
+          <!-- racks -->
+          <g class="hot" data-k="rack">
+            <rect x="44" y="250" width="78" height="60" rx="6" fill="#0e1c30" stroke="#27406b" stroke-width="1.5"/>
+            <rect x="194" y="250" width="78" height="60" rx="6" fill="#0e1c30" stroke="#27406b" stroke-width="1.5"/>
+            <rect x="344" y="250" width="78" height="60" rx="6" fill="#0e1c30" stroke="#27406b" stroke-width="1.5"/>
+            <rect x="459" y="250" width="78" height="60" rx="6" fill="#0e1c30" stroke="#27406b" stroke-width="1.5"/>
+            <text class="lab s" x="83" y="284" text-anchor="middle">机柜 NVL72</text>
+            <text class="lab s" x="233" y="284" text-anchor="middle">机柜 NVL72</text>
+            <text class="lab s" x="383" y="284" text-anchor="middle">机柜 NVL72</text>
+            <text class="lab s" x="498" y="284" text-anchor="middle">机柜 …</text>
+          </g>
+          <!-- links spine-leaf (optical) -->
+          <g stroke="#ff9e57" stroke-width="1.6" opacity=".8">
+            <line x1="165" y1="60" x2="83" y2="140"/><line x1="165" y1="60" x2="233" y2="140"/>
+            <line x1="165" y1="60" x2="383" y2="140"/><line x1="165" y1="60" x2="498" y2="140"/>
+            <line x1="395" y1="60" x2="83" y2="140"/><line x1="395" y1="60" x2="233" y2="140"/>
+            <line x1="395" y1="60" x2="383" y2="140"/><line x1="395" y1="60" x2="498" y2="140"/>
+          </g>
+          <!-- links leaf-rack -->
+          <g stroke="#5ad17e" stroke-width="1.6" opacity=".7">
+            <line x1="83" y1="172" x2="83" y2="250"/><line x1="233" y1="172" x2="233" y2="250"/>
+            <line x1="383" y1="172" x2="383" y2="250"/><line x1="498" y1="172" x2="498" y2="250"/>
+          </g>
+          <text class="lab s" x="300" y="110" text-anchor="middle" fill="#ff9e57">━ 光纤链路（每端一个光模块）</text>
+        </svg>
+      </div>
+      <div class="info" id="infoFab"></div>
+    </div>
+
+    <div class="facts">
+      <div class="fact"><div class="n">2–6×</div><div class="l">光模块数 / GPU 数（随拓扑层数）</div></div>
+      <div class="fact"><div class="n">800G</div><div class="l">当前主流单模块速率（→ 1.6T）</div></div>
+      <div class="fact"><div class="n">2 类</div><div class="l">网络路线：InfiniBand vs 以太网</div></div>
+      <div class="fact"><div class="n">$26B</div><div class="l">2026 AI 光模块市场（TrendForce）</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. OPTICAL MODULE ============ -->
+<section class="lvl" id="optic">
+  <div class="wrap">
+    <div class="secnum">LEVEL 04 — 把电变成光，再变回来</div>
+    <h2>光模块内部结构：一枚硬币大小的电光转换器</h2>
+    <p class="sub">光模块（光收发器 / Transceiver）插在交换机和网卡的笼子里，左侧是电接口（金手指），右侧是光接口（LC/MPO 光纤）。<b>发送链路</b>把电信号→驱动→激光器变成光；<b>接收链路</b>把光→探测器→TIA 放大变回电。核心三类芯片：<b>DSP、激光器、探测器</b>。点击各模块查看。</p>
+
+    <div class="stage">
+      <div class="canvas">
+        <span class="hint">点击元件 ▸</span>
+        <svg viewBox="0 0 560 320" id="svgOptic" role="img" aria-label="光模块内部框图">
+          <!-- shell -->
+          <rect x="20" y="40" width="520" height="240" rx="14" fill="#0c1626" stroke="#27406b" stroke-width="2"/>
+          <text class="lab s" x="30" y="32" fill="#8aa0c4">OSFP / QSFP-DD 外壳（金属屏蔽 + 散热）</text>
+
+          <!-- gold fingers -->
+          <rect class="hot" data-k="pcb" x="28" y="120" width="40" height="80" rx="3" fill="#caa53a"/>
+          <text class="lab s" x="48" y="214" text-anchor="middle" fill="#ffd166">金手指</text>
+          <text class="lab s" x="48" y="116" text-anchor="middle" fill="#ffd166">电接口</text>
+
+          <!-- DSP -->
+          <rect class="hot" data-k="dsp" x="92" y="120" width="78" height="80" rx="6" fill="#3a2d5e" stroke="#b78cff" stroke-width="1.5"/>
+          <text class="lab" x="131" y="156" text-anchor="middle">DSP</text>
+          <text class="lab s" x="131" y="172" text-anchor="middle">PAM4 / CDR</text>
+
+          <!-- TX chain -->
+          <rect class="hot" data-k="driver" x="198" y="70" width="64" height="44" rx="6" fill="#1b2c4d" stroke="#5b8cff" stroke-width="1.5"/>
+          <text class="lab s" x="230" y="96" text-anchor="middle">Driver 驱动</text>
+          <rect class="hot" data-k="tosa" x="290" y="64" width="92" height="56" rx="6" fill="#3a2415" stroke="#ff9e57" stroke-width="1.5"/>
+          <text class="lab" x="336" y="86" text-anchor="middle" fill="#ffb877">TOSA</text>
+          <text class="lab s" x="336" y="102" text-anchor="middle">激光器 EML/SiPh</text>
+
+          <!-- RX chain -->
+          <rect class="hot" data-k="tia" x="198" y="206" width="64" height="44" rx="6" fill="#1b2c4d" stroke="#5b8cff" stroke-width="1.5"/>
+          <text class="lab s" x="230" y="232" text-anchor="middle">TIA 放大</text>
+          <rect class="hot" data-k="rosa" x="290" y="200" width="92" height="56" rx="6" fill="#16323a" stroke="#37e0c8" stroke-width="1.5"/>
+          <text class="lab" x="336" y="222" text-anchor="middle" fill="#37e0c8">ROSA</text>
+          <text class="lab s" x="336" y="238" text-anchor="middle">光探测器 PD/APD</text>
+
+          <!-- optical interface -->
+          <rect class="hot" data-k="lens" x="410" y="120" width="40" height="80" rx="4" fill="#13233f" stroke="#5b8cff"/>
+          <text class="lab s" x="430" y="116" text-anchor="middle">透镜/隔离器</text>
+          <rect class="hot" data-k="conn" x="470" y="130" width="56" height="60" rx="4" fill="#16263f" stroke="#37e0c8"/>
+          <text class="lab s" x="498" y="164" text-anchor="middle">光口</text>
+          <text class="lab s" x="498" y="178" text-anchor="middle">LC/MPO</text>
+
+          <!-- arrows TX -->
+          <g stroke="#5b8cff" stroke-width="2" marker-end="url(#ah)">
+            <line x1="170" y1="150" x2="198" y2="92"/>
+            <line x1="262" y1="92" x2="290" y2="92"/>
+          </g>
+          <line x1="382" y1="92" x2="410" y2="150" stroke="#ff9e57" stroke-width="2.4" marker-end="url(#ao)"/>
+          <!-- arrows RX -->
+          <g stroke="#37e0c8" stroke-width="2" marker-end="url(#ag)">
+            <line x1="290" y1="228" x2="262" y2="228"/>
+            <line x1="198" y1="228" x2="170" y2="178"/>
+          </g>
+          <line x1="450" y1="160" x2="382" y2="228" stroke="#ff9e57" stroke-width="2.4" marker-end="url(#ao)"/>
+
+          <text class="lab s" x="230" y="58" text-anchor="middle" fill="#5b8cff">发送 TX ▲ 电→光</text>
+          <text class="lab s" x="230" y="276" text-anchor="middle" fill="#37e0c8">接收 RX ▼ 光→电</text>
+
+          <defs>
+            <marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#5b8cff"/></marker>
+            <marker id="ag" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#37e0c8"/></marker>
+            <marker id="ao" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#ff9e57"/></marker>
+          </defs>
+        </svg>
+      </div>
+      <div class="info" id="infoOptic"></div>
+    </div>
+
+    <div class="compare">
+      <div class="cmp">
+        <h4><i class="dotc" style="background:#b78cff"></i>三条技术路线之争</h4>
+        <ul>
+          <li><b>传统可插拔（EML + DSP）</b>：当前主力，成熟可靠</li>
+          <li><b>硅光 SiPh</b>：光器件集成到硅芯片，利于 1.6T 上量，2026 占比有望过半</li>
+          <li><b>LPO 线性直驱</b>：去掉模块内 DSP，靠交换机 SerDes，省电省成本</li>
+        </ul>
+      </div>
+      <div class="cmp">
+        <h4><i class="dotc" style="background:#37e0c8"></i>终极形态：CPO 共封装光学</h4>
+        <ul>
+          <li>把光引擎直接<b>封装进交换芯片旁边</b>，电走线缩到最短</li>
+          <li>大幅降功耗、提密度，应对 1.6T/3.2T 时代</li>
+          <li>玩家：Broadcom、NVIDIA、Marvell、Ayar Labs 等</li>
+          <li>代价：可维护性下降、生态尚不成熟</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">成本结构（典型可插拔模块 BOM）：<b>DSP ≈ 30%</b>，<b>Driver + TIA ≈ 20%</b>，<b>激光器/光器件 + 封装 ≈ 50%</b>。所以"激光器芯片"和"DSP"是两个最被资本关注的卡脖子环节。</p>
+  </div>
+</section>
+
+<!-- ============ 5. COMPANIES ============ -->
+<section class="lvl" id="firms">
+  <div class="wrap">
+    <div class="secnum">产业链地图</div>
+    <h2>按层级梳理：谁在每一层赚钱</h2>
+    <p class="sub">把上面四个尺度涉及的公司，按"从芯片最里层 → 到机柜外光网络"的 9 个层级排列。点击每一层展开公司清单；上方按地区筛选。标注<b style="color:var(--gold)">龙头</b>者为该环节市占或技术领先者。</p>
+
+    <div class="filters" id="filters">
+      <button data-f="all" class="on">全部</button>
+      <button data-f="us">美系</button>
+      <button data-f="cn">中国</button>
+      <button data-f="asia">日韩/台湾</button>
+    </div>
+
+    <div class="tiers" id="tiers"></div>
+    <p class="note">说明：本图为产业结构梳理，非投资建议；公司归类按主营环节，部分公司横跨多层（如 Broadcom 同时做交换芯片、DSP、定制 ASIC 与 CPO；NVIDIA 几乎贯穿全栈）。市占描述基于 2025–2026 公开资料。</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>AI 芯片互联全景拆解 · 交互页面 · 生成于 2026-06 · 图示为自制 SVG 原理示意，非工程图纸。</div>
+    <div class="src">
+      主要参考：
+      NVIDIA GB200 NVL72 官方与 OCP 设计文档 ·
+      NVIDIA Blackwell / CoWoS-L 架构解析 ·
+      TrendForce《2026 AI 光模块市场》·
+      LightCounting 光通信预测 ·
+      行业对 800G/1.6T 光模块与硅光/LPO/CPO 的公开拆解。
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ============ DATA: detail panels ============ */
+const DATA = {
+  board:{
+    sel:'die',
+    items:{
+      die:{tag:'逻辑裸片 · Compute Die',h:'GPU Die（×2）',p:'Blackwell B200 由两颗接近光罩极限的逻辑裸片组成，通过 NV-HBI 以 10 TB/s 互联，对软件呈现为单颗 GPU。台积电 4NP 工艺。',specs:[['工艺','TSMC 4NP'],['晶体管','2080 亿（双 die）'],['片间带宽','10 TB/s'],['对外','作为单一 GPU 调度']],pills:['计算核心','SM / Tensor Core','光罩拼接']},
+      hbm:{tag:'高带宽内存 · HBM',h:'HBM3e 内存堆栈 ×8',p:'每颗 HBM 是十几层 DRAM 裸片通过 TSV 垂直堆叠而成，紧贴逻辑 die 放在同一中介层上，提供海量带宽喂饱算力。',specs:[['容量','192 GB / 卡'],['带宽','8 TB/s'],['堆栈','8 颗 HBM3e'],['供应','SK海力士/三星/美光']],pills:['TSV 垂直堆叠','HBM3e','瓶颈环节']},
+      interposer:{tag:'2.5D 封装 · 中介层',h:'CoWoS-L 中介层',p:'逻辑 die 与 HBM 都焊在中介层上，中介层内布了上万根极细走线（含 LSI 硅桥）实现超高密度互连。CoWoS 产能 = AI 芯片产能。',specs:[['技术','TSMC CoWoS-L'],['结构','有机中介层 + 硅桥'],['连接','micro-bump 微凸点'],['瓶颈','封装产能紧张']],pills:['2.5D','LSI 硅桥','台积电主导']},
+      substrate:{tag:'封装基板 · Substrate',h:'封装基板 + BGA 焊球',p:'中介层之下的有机基板，把信号/供电从封装引出到 PCB，底部是 BGA 焊球阵列（数千个）。',specs:[['类型','ABF 载板'],['引脚','数千 BGA'],['作用','供电 + I/O 扇出'],['供应','日台基板厂']],pills:['ABF 载板','BGA','供电扇出']},
+      module:{tag:'模组 · Module',h:'SXM / OAM 模组',p:'封装好的芯片装到 SXM（NVIDIA）或 OAM（开放标准）模组上，集成供电 VRM、NVLink 金手指，再插到基板。',specs:[['形态','SXM5 / OAM'],['供电','板载 VRM'],['对外','NVLink 金手指'],['冷却','冷板液冷']],pills:['SXM','OAM 开放标准','可插拔模组']},
+      board:{tag:'基板 · Baseboard',h:'HGX 基板（8 GPU）',p:'一块 HGX 基板承载 8 颗 GPU 模组，板上集成 NVSwitch 芯片，使 8 卡之间全互联——这是 NVLink 域的基本单元。',specs:[['GPU 数','8 / 基板'],['板载','NVSwitch ×4'],['互联','卡间全互联'],['上游','HGX 参考设计']],pills:['HGX','板载 NVSwitch','8-GPU 域']},
+      grace:{tag:'CPU · 异构',h:'Grace CPU（C2C）',p:'GB200 把 1 颗 Arm 架构 Grace CPU 与 2 颗 B200 用 NVLink-C2C 以 900 GB/s 连接，CPU/GPU 共享内存，组成"超级芯片"。',specs:[['CPU','Grace (Arm)'],['链路','NVLink-C2C 900GB/s'],['配比','1 CPU : 2 GPU'],['内存','LPDDR5X + HBM 统一']],pills:['Grace','C2C','超级芯片']},
+    }
+  },
+  rack:{
+    sel:'compute',
+    items:{
+      compute:{tag:'计算托盘 · Compute Tray',h:'计算托盘 ×18',p:'每个 1U 计算托盘含 2 个 GB200 超级芯片（= 2 Grace + 4 B200），全液冷。18 个托盘共 72 颗 GPU、36 颗 CPU。',specs:[['数量','18 托盘 / 柜'],['每托盘','2× GB200'],['合计 GPU','72 颗 B200'],['冷却','冷板液冷']],pills:['1U','GB200','液冷']},
+      sw:{tag:'交换托盘 · Switch Tray',h:'NVSwitch 托盘 ×9',p:'每个交换托盘含 2 颗第五代 NVSwitch 芯片，提供 144 个 NVLink 端口。9 个交换托盘构成全互联交换平面，使 72 卡无阻塞 all-to-all。',specs:[['数量','9 托盘 / 柜'],['每托盘','2× NVSwitch'],['端口','144 NVLink/托盘'],['全互联带宽','130 TB/s']],pills:['NVSwitch 5','无阻塞','all-to-all']},
+      spine:{tag:'背板 · NVLink Spine',h:'NVLink Spine 铜背板',p:'机柜背面的"脊柱"，由 4 个线缆盒、5000+ 根同轴铜缆组成（铜缆总长约 2 英里），把所有计算托盘与交换托盘连成一体。短距离用铜：更省电、更便宜。',specs:[['介质','同轴铜缆'],['数量','5000+ 根'],['总长','≈ 2 英里'],['为何用铜','短距更省电']],pills:['纯铜互联','无光模块','Scale-Up 核心']},
+      power:{tag:'供电 · Power',h:'供电母线 + 整流',p:'整柜约 120 kW，远超传统机柜的 ~10 kW。顶部/侧边整流架把交流转直流，经铜母线（Busbar）分配到各托盘。',specs:[['整柜功率','~120 kW'],['对比','传统柜 ~10 kW'],['分配','直流 Busbar'],['挑战','供电与散热']],pills:['120kW','Busbar','高密度']},
+      cool:{tag:'散热 · Cooling',h:'CDU 液冷分配',p:'冷却液分配单元（CDU）把冷液送入每个冷板，带走芯片热量。NVL72 这种功率密度下，风冷已无法胜任，液冷成为标配。',specs:[['方式','直接液冷 DLC'],['部件','CDU + 歧管'],['原因','120kW 风冷不够'],['趋势','整柜液冷标配']],pills:['DLC','冷板','CDU']},
+      cx:{tag:'出柜网卡 · NIC',h:'ConnectX / BlueField',p:'计算托盘上的 ConnectX 网卡或 BlueField DPU，是机柜通往外部 Scale-Out 网络的出口——从这里开始接光模块、连机柜间网络。',specs:[['部件','ConnectX-8 / BlueField-3'],['作用','Scale-Out 出口'],['接口','InfiniBand/以太网'],['下一跳','光模块 → Leaf']],pills:['DPU','RDMA','铜光分界']},
+    }
+  },
+  fabric:{
+    sel:'rack',
+    items:{
+      rack:{tag:'端点 · Rack',h:'计算机柜（NVL72）',p:'在集群视角下，每个 NVL72 机柜就是一个超级节点。机柜内 72 卡靠铜全互联，机柜对外靠每张网卡的光口接入网络。',specs:[['本体','72-GPU 超节点'],['内部','NVLink 铜'],['对外','光模块 ×N'],['布线','Rail-Optimized']],pills:['超节点','轨道优化']},
+      leaf:{tag:'接入层 · Leaf / ToR',h:'Leaf / 架顶交换机',p:'机柜的网卡先连到 Leaf（或架顶 ToR）交换机。每条链路两端各一个光模块。常见 NVIDIA Quantum (IB) 或 Spectrum (以太网) / Broadcom Tomahawk。',specs:[['位置','接入层'],['上联','全部 Spine'],['每链路','2 个光模块'],['芯片','Tomahawk/Quantum']],pills:['ToR','接入层','光互联']},
+      spine:{tag:'汇聚层 · Spine',h:'Spine 核心交换机',p:'Spine 层把所有 Leaf 互联，构成无阻塞胖树。集群越大，Spine/Leaf 层数越多，光模块用量随之翻倍增长。',specs:[['位置','骨干汇聚'],['拓扑','胖树/Clos'],['特性','无阻塞'],['影响','放大光模块需求']],pills:['Clos','胖树','无阻塞']},
+      fiber:{tag:'链路 · Optical',h:'光纤链路',p:'机柜之间全部光纤连接。速率从 400G→800G→1.6T 演进；这正是光模块成为 AI 基建最紧俏环节的根源。',specs:[['介质','单模/多模光纤'],['速率','800G 主流 → 1.6T'],['用量','2–6× GPU 数'],['市场','2026 约 $26B']],pills:['800G','1.6T','需求爆发']},
+    }
+  },
+  optic:{
+    sel:'dsp',
+    items:{
+      pcb:{tag:'电接口 · Gold Finger',h:'金手指 / 内部 PCB',p:'模块左端的金手指插入交换机/网卡笼子，传入高速电信号（PAM4）。内部 PCB 承载各颗芯片并做高频布线。',specs:[['接口','电 · 金手指'],['信号','PAM4 高速电'],['形态','OSFP/QSFP-DD'],['作用','电信号进出']],pills:['PAM4','金手指','可热插拔']},
+      dsp:{tag:'核心芯片 · DSP',h:'DSP 数字信号处理',p:'对高速电信号做均衡、时钟恢复(CDR)、PAM4 编解码与前向纠错，补偿信道损伤。约占模块 BOM 30%，是价值最高的单颗芯片。LPO 路线则去掉它。',specs:[['功能','均衡/CDR/FEC'],['调制','PAM4'],['BOM 占比','~30%'],['主供','Marvell / Broadcom']],pills:['CDR','FEC','成本大头']},
+      driver:{tag:'发送 · TX',h:'Driver 激光驱动',p:'把 DSP 输出的电信号放大、整形，驱动激光器调制发光。与 TIA 同属模拟前端，LPO 模式下工作在线性区。',specs:[['作用','驱动激光器'],['位置','发送链路'],['BOM','与 TIA 合计 ~20%'],['主供','MACOM/Semtech/博通']],pills:['模拟前端','线性驱动']},
+      tosa:{tag:'发送 · 光',h:'TOSA + 激光器',p:'发送光组件。核心是激光器芯片：短距用 VCSEL，长距用 DFB/EML（电吸收调制激光器），或硅光集成。把电变成光。激光器是又一卡脖子环节。',specs:[['核心','EML / DFB / VCSEL / SiPh'],['作用','电 → 光'],['长距','EML / 硅光'],['供应','Coherent/Lumentum/住友/源杰']],pills:['EML','VCSEL','硅光','卡脖子']},
+      rosa:{tag:'接收 · 光',h:'ROSA + 光探测器',p:'接收光组件。光电探测器（PD/APD）把进来的光信号转回微弱电流，交给 TIA 放大。',specs:[['核心','PD / APD 探测器'],['作用','光 → 电流'],['配套','TIA'],['位置','接收链路']],pills:['光电探测','PD/APD']},
+      tia:{tag:'接收 · TX',h:'TIA 跨阻放大器',p:'把探测器输出的微弱电流放大成可用电压信号，送回 DSP。模拟前端关键芯片，与 Driver 合计约占 BOM 20%。',specs:[['作用','电流→电压放大'],['位置','接收链路'],['BOM','与 Driver 合计 ~20%'],['主供','MACOM/Semtech/博通']],pills:['跨阻放大','模拟前端']},
+      lens:{tag:'光路 · Optics',h:'透镜 / 隔离器',p:'光学耦合元件：透镜把激光准直进光纤，隔离器防止反射光干扰激光器，保证信号质量。',specs:[['部件','透镜/隔离器/WDM'],['作用','耦合与隔离'],['趋势','薄膜铌酸锂等新材料'],['供应','光器件厂']],pills:['耦合','隔离器','无源器件']},
+      conn:{tag:'光接口 · Connector',h:'光纤接口 LC / MPO',p:'模块右端的光纤连接器：单纤用 LC，多通道并行用 MPO/MTP。从这里接入机柜间光纤网络。',specs:[['接口','光 · LC/MPO'],['类型','单模/多模'],['对接','机柜间光纤'],['作用','光信号进出']],pills:['LC','MPO/MTP','光口']},
+    }
+  }
+};
+
+/* ============ render info panel ============ */
+function renderInfo(level, key){
+  const set = DATA[level], it = set.items[key]; if(!it) return;
+  const el = document.getElementById('info'+cap(level));
+  el.innerHTML =
+    `<div class="tag">${it.tag}</div><h3>${it.h}</h3><p>${it.p}</p>`+
+    it.specs.map(s=>`<div class="spec"><b>${s[0]}</b><span>${s[1]}</span></div>`).join('')+
+    `<div style="padding:12px 0 6px">${it.pills.map(p=>`<span class="pill">${p}</span>`).join('')}</div>`;
+}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+/* wire svg hotspots */
+function wire(level, svgId, keymap){
+  const svg = document.getElementById(svgId);
+  svg.querySelectorAll('.hot').forEach(g=>{
+    g.addEventListener('click',()=>{
+      const k = keymap(g.getAttribute('data-k'));
+      svg.querySelectorAll('.hot').forEach(x=>x.classList.remove('sel'));
+      // select all hot with same data-k
+      svg.querySelectorAll('.hot[data-k="'+g.getAttribute('data-k')+'"]').forEach(x=>x.classList.add('sel'));
+      renderInfo(level,k);
+    });
+  });
+}
+
+/* build rack trays */
+(function buildRack(){
+  const top=document.getElementById('topTrays'), sw=document.getElementById('switchTrays'), bot=document.getElementById('botTrays');
+  function tray(y,k,fill,stroke,txt){
+    return `<g class="hot" data-k="${k}"><rect x="70" y="${y}" width="290" height="13" rx="3" fill="${fill}" stroke="${stroke}" stroke-width="1"/><text class="lab s" x="78" y="${y+10}" fill="#cfe0ff">${txt}</text></g>`;
+  }
+  let h='';
+  for(let i=0;i<9;i++) h+=tray(26+i*15,'compute','#16263f','#5b8cff', i===0?'计算托盘 Compute ×18':'');
+  top.innerHTML=h;
+  h='';
+  for(let i=0;i<5;i++) h+=tray(166+i*15,'sw','#163029','#37e0c8', i===0?'NVSwitch 交换托盘 ×9':'');
+  sw.innerHTML=h;
+  h='';
+  for(let i=0;i<4;i++) h+=tray(246+i*15,'compute','#16263f','#5b8cff','');
+  bot.innerHTML=h;
+})();
+
+wire('board','svgBoard',k=>k);
+wire('rack','svgRack',k=>({compute:'compute',sw:'sw',spine:'spine',power:'power',cool:'cool',cx:'cx'}[k]||k));
+wire('fabric','svgFab',k=>({rack:'rack',leaf:'leaf',spine:'spine'}[k]||k));
+wire('optic','svgOptic',k=>k);
+
+// also let optical fiber links be clickable via legend? add default
+renderInfo('board','die');
+renderInfo('rack','compute');
+renderInfo('fabric','rack');
+renderInfo('optic','dsp');
+// pre-select
+document.querySelector('#svgBoard .hot[data-k="die"]').classList.add('sel');
+document.querySelector('#svgRack .hot[data-k="compute"]').classList.add('sel');
+document.querySelector('#svgFab .hot[data-k="rack"]').classList.add('sel');
+document.querySelector('#svgOptic .hot[data-k="dsp"]').classList.add('sel');
+// fabric fiber: clicking fiber legend not wired; add link key on spine-leaf lines optional
+
+/* ============ COMPANIES DATA ============ */
+const TIERS = [
+  {c:'#5b8cff', t:'1 · 计算 / 加速芯片', d:'GPU、TPU、定制 ASIC——算力的源头', moat:'生态 + 制程',
+   co:[
+    {n:'NVIDIA',r:'GPU + 全栈生态',f:'美',reg:'us',lead:1},
+    {n:'AMD',r:'Instinct MI 系列 GPU',f:'美',reg:'us'},
+    {n:'Intel',r:'Gaudi 加速器',f:'美',reg:'us'},
+    {n:'Google',r:'TPU（博通协同设计）',f:'美',reg:'us'},
+    {n:'AWS',r:'Trainium / Inferentia',f:'美',reg:'us'},
+    {n:'Microsoft',r:'Maia 100',f:'美',reg:'us'},
+    {n:'Meta',r:'MTIA 自研',f:'美',reg:'us'},
+    {n:'Broadcom',r:'定制 AI ASIC 代设计',f:'美',reg:'us',lead:1},
+    {n:'Marvell',r:'定制 ASIC（含 AWS）',f:'美',reg:'us'},
+    {n:'Cerebras',r:'晶圆级引擎 WSE',f:'美',reg:'us'},
+    {n:'Groq',r:'LPU 推理芯片',f:'美',reg:'us'},
+    {n:'华为',r:'昇腾 Ascend',f:'中',reg:'cn'},
+    {n:'寒武纪',r:'思元 MLU',f:'中',reg:'cn'},
+    {n:'壁仞 / 燧原',r:'国产 GPGPU',f:'中',reg:'cn'},
+   ]},
+  {c:'#ffd166', t:'2 · HBM 高带宽内存', d:'喂饱算力的关键，三家寡头垄断', moat:'极高（3 家）',
+   co:[
+    {n:'SK hynix',r:'HBM3e 龙头',f:'韩',reg:'asia',lead:1},
+    {n:'Samsung',r:'HBM 第二供应',f:'韩',reg:'asia'},
+    {n:'Micron',r:'HBM3e 追赶',f:'美',reg:'us'},
+   ]},
+  {c:'#b78cff', t:'3 · 先进封装 / 代工', d:'CoWoS 2.5D 封装 = AI 芯片产能瓶颈', moat:'极高',
+   co:[
+    {n:'TSMC 台积电',r:'CoWoS / 先进制程',f:'台',reg:'asia',lead:1},
+    {n:'Samsung',r:'代工 + 封装',f:'韩',reg:'asia'},
+    {n:'Intel Foundry',r:'EMIB / Foveros',f:'美',reg:'us'},
+    {n:'ASE 日月光',r:'封测代工 (OSAT)',f:'台',reg:'asia'},
+    {n:'Amkor',r:'封测代工',f:'美',reg:'us'},
+   ]},
+  {c:'#37e0c8', t:'4 · 交换 / 互联芯片', d:'NVLink、InfiniBand、以太网交换 ASIC', moat:'高',
+   co:[
+    {n:'NVIDIA',r:'NVSwitch / Quantum / Spectrum',f:'美',reg:'us',lead:1},
+    {n:'Broadcom',r:'Tomahawk / Jericho',f:'美',reg:'us',lead:1},
+    {n:'Marvell',r:'交换 + 定制互联',f:'美',reg:'us'},
+    {n:'Cisco',r:'Silicon One',f:'美',reg:'us'},
+   ]},
+  {c:'#5ad17e', t:'5 · 网络设备 / 系统', d:'交换机整机与服务器 OEM', moat:'中',
+   co:[
+    {n:'NVIDIA',r:'Quantum/Spectrum 整机',f:'美',reg:'us',lead:1},
+    {n:'Arista',r:'数据中心以太网交换机',f:'美',reg:'us',lead:1},
+    {n:'Cisco',r:'交换机系统',f:'美',reg:'us'},
+    {n:'Juniper',r:'AI 数据中心网络',f:'美',reg:'us'},
+    {n:'新华三 / 锐捷',r:'国产交换机',f:'中',reg:'cn'},
+   ]},
+  {c:'#ff9e57', t:'6 · 光模块 / 光收发器', d:'机柜间光互联的载体，中国主导', moat:'中高',
+   co:[
+    {n:'中际旭创 InnoLight',r:'800G/1.6T 全球第一',f:'中',reg:'cn',lead:1},
+    {n:'新易盛 Eoptolink',r:'全球第二',f:'中',reg:'cn',lead:1},
+    {n:'光迅科技 Accelink',r:'光模块 + 光芯片',f:'中',reg:'cn'},
+    {n:'华工正源',r:'光模块',f:'中',reg:'cn'},
+    {n:'Coherent',r:'高速光模块 + 器件',f:'美',reg:'us'},
+    {n:'Lumentum',r:'光模块 + 激光器',f:'美',reg:'us'},
+    {n:'Fabrinet',r:'光模块代工龙头',f:'泰',reg:'asia'},
+   ]},
+  {c:'#ff6f9c', t:'7 · 光芯片 / 光器件', d:'DSP、激光器、探测器、硅光、无源器件', moat:'高（卡脖子）',
+   co:[
+    {n:'Marvell',r:'光 DSP 龙头',f:'美',reg:'us',lead:1},
+    {n:'Broadcom',r:'DSP + 激光 + 硅光',f:'美',reg:'us',lead:1},
+    {n:'Coherent',r:'EML/DFB 激光器',f:'美',reg:'us'},
+    {n:'Lumentum',r:'激光器芯片',f:'美',reg:'us'},
+    {n:'住友 / 三菱',r:'EML 激光芯片',f:'日',reg:'asia'},
+    {n:'MACOM / Semtech',r:'Driver / TIA',f:'美',reg:'us'},
+    {n:'源杰科技',r:'国产激光芯片',f:'中',reg:'cn'},
+    {n:'天孚通信',r:'光器件 / 封装',f:'中',reg:'cn'},
+    {n:'Intel',r:'硅光 SiPh',f:'美',reg:'us'},
+   ]},
+  {c:'#9bb0d0', t:'8 · 铜连接 / 线缆 / 连接器', d:'机柜内 Scale-Up 铜互联与高速连接器', moat:'中',
+   co:[
+    {n:'Amphenol 安费诺',r:'高速连接器 + DAC/ACC',f:'美',reg:'us',lead:1},
+    {n:'TE Connectivity',r:'连接器',f:'美',reg:'us'},
+    {n:'Molex',r:'背板连接器',f:'美',reg:'us'},
+    {n:'立讯精密 Luxshare',r:'高速铜缆 / 连接器',f:'中',reg:'cn',lead:1},
+    {n:'沃尔核材',r:'高速铜缆材料',f:'中',reg:'cn'},
+   ]},
+  {c:'#37e0c8', t:'9 · CPO / 前沿光互联', d:'共封装光学、硅光引擎——下一代形态', moat:'技术领先窗口',
+   co:[
+    {n:'Broadcom',r:'CPO 交换机先发',f:'美',reg:'us',lead:1},
+    {n:'NVIDIA',r:'Quantum/Spectrum CPO',f:'美',reg:'us',lead:1},
+    {n:'Marvell',r:'CPO + 定制硅光',f:'美',reg:'us'},
+    {n:'Ayar Labs',r:'光 I/O chiplet',f:'美',reg:'us'},
+    {n:'Lightmatter',r:'光互连 + 光计算',f:'美',reg:'us'},
+    {n:'Celestial AI',r:'光子互连 Fabric',f:'美',reg:'us'},
+   ]},
+];
+
+/* render tiers */
+(function buildTiers(){
+  const root=document.getElementById('tiers');
+  root.innerHTML = TIERS.map((t,i)=>{
+    const cards = t.co.map(c=>
+      `<div class="co ${c.lead?'lead-co':''}" data-reg="${c.reg}">
+         <div class="nm">${c.n}<span class="flag">${c.f}</span></div>
+         <div class="rl">${c.r}</div>
+       </div>`).join('');
+    return `<div class="tier ${i===0?'open':''}" data-i="${i}">
+      <div class="th">
+        <div class="idx" style="background:${t.c}">${i+1}</div>
+        <div><div class="ttl">${t.t.replace(/^\d+ · /,'')}</div><div class="desc">${t.d}</div></div>
+        <div class="meta"><span class="moat">护城河：${t.moat}</span><span class="chev">▶</span></div>
+      </div>
+      <div class="body"><div class="cards">${cards}</div></div>
+    </div>`;
+  }).join('');
+  root.querySelectorAll('.tier .th').forEach(th=>{
+    th.addEventListener('click',()=>th.parentElement.classList.toggle('open'));
+  });
+})();
+
+/* region filter */
+document.getElementById('filters').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  document.querySelectorAll('#filters button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  const f=b.getAttribute('data-f');
+  document.querySelectorAll('.tier').forEach(tier=>{
+    let any=false;
+    tier.querySelectorAll('.co').forEach(co=>{
+      const show = f==='all' || co.getAttribute('data-reg')===f;
+      co.style.display = show?'':'none';
+      if(show) any=true;
+    });
+    tier.classList.toggle('hide', !any);
+    if(f!=='all'&&any) tier.classList.add('open');
+  });
+});
+
+/* scrollspy nav */
+const navlinks=[...document.querySelectorAll('nav.tabs a')];
+const secs=navlinks.map(a=>document.querySelector(a.getAttribute('href')));
+window.addEventListener('scroll',()=>{
+  let idx=0;
+  secs.forEach((s,i)=>{ if(s && s.getBoundingClientRect().top<=120) idx=i; });
+  navlinks.forEach(a=>a.classList.remove('on'));
+  navlinks[idx]?.classList.add('on');
+},{passive:true});
+</script>
+</body>
+</html>
